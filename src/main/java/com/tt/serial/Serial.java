@@ -1,6 +1,6 @@
 package com.tt.serial;
 
-import com.tt.entity.DestinationData;
+import com.tt.activeMQ.Sender;
 import com.tt.entity.ParamConfig;
 import gnu.io.*;
 
@@ -19,6 +19,11 @@ public class Serial implements SerialPortEventListener {
     Enumeration<CommPortIdentifier> portEnum;
     //串口识别器，获取系统中的所有端口
     private CommPortIdentifier commPortIdentifier;
+    private static byte[] buffer;
+
+    public static byte[] getBuffer(){
+        return buffer;
+    }
 
     public void init(ParamConfig paramConfig) {
         //获取系统中所有的通讯端口
@@ -35,6 +40,9 @@ public class Serial implements SerialPortEventListener {
                 try {
                     //打开串口
                     serialPort = (SerialPort) commPortIdentifier.open(Object.class.getSimpleName(), 2000);
+
+
+
                     serialPort.addEventListener(this);
                     //设置串口可监听
                     serialPort.notifyOnDataAvailable(true);
@@ -67,15 +75,32 @@ public class Serial implements SerialPortEventListener {
             case SerialPortEvent.RI:    //响铃侦测
                 break;
             case SerialPortEvent.DATA_AVAILABLE:    //有数据到达，生产者
-                readFromSerial();
+                sendToActiveMQ();
+//                readFromSerial();
             default:
                 break;
 
         }
     }
 
+    private void sendToActiveMQ() {
+        try {
+            inputStream = serialPort.getInputStream();
+            buffer = new byte[inputStream.available()];
+            int len = 0;
+            while ((len = inputStream.read(buffer)) != -1) {
+                //把字节数组传给activeMQ
+                Sender.sendMessage(buffer);
+//                Receiver.receiveMessage(buffer.length);
+                break;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private String readFromSerial() {
-        DestinationData destinationData = new DestinationData();
+//        DestinationData destinationData = new DestinationData();
         try {
             //获取串口输入流
             inputStream = serialPort.getInputStream();
@@ -83,11 +108,10 @@ public class Serial implements SerialPortEventListener {
             int len = 0;
             while ((len = inputStream.read(buffer)) != -1) {
                 data = new String(buffer, 0, len);
-                bytesToHexString(buffer, destinationData);
                 System.out.println("data: " + data);
 //                System.out.println("dataHex: " + dataHex);
                 System.out.println("size: " + buffer.length);
-                System.out.println("destinationData : " + destinationData);
+//                System.out.println("destinationData : " + destinationData);
                 inputStream.close();
                 inputStream = null;
                 break;
@@ -101,51 +125,6 @@ public class Serial implements SerialPortEventListener {
     private void closeSerialPort() {
         if (serialPort != null) {
             serialPort.notifyOnDataAvailable(false);
-        }
-    }
-
-    private void bytesToHexString(byte[] bytes, DestinationData destinationData) {
-        for (int i = 0; i < bytes.length; i++) {
-            switch (i) {
-                case 14:
-                    destinationData.setHour(bytes[i]);
-                    break;
-                case 15:
-                    destinationData.setMinute(bytes[i]);
-                    break;
-                case 16:
-                    destinationData.setSecond(bytes[i]);
-                    break;
-                case 17:
-                    destinationData.setMicrosecond(bytes[i]);
-                    break;
-                case 18:
-                    destinationData.setLongitudeDegree(bytes[i]);
-                    break;
-                case 19:
-                    destinationData.setLongitudeMinute(bytes[i]);
-                    break;
-                case 20:
-                    destinationData.setLongitudeSecond(bytes[i]);
-                    break;
-                case 21:
-                    destinationData.setLongitudeMicrosecond(bytes[i]);
-                    break;
-                case 22:
-                    destinationData.setLatitudeDegree(bytes[i]);
-                    break;
-                case 23:
-                    destinationData.setLatitudeMinute(bytes[i]);
-                    break;
-                case 24:
-                    destinationData.setLatitudeSecond(bytes[i]);
-                    break;
-                case 25:
-                    destinationData.setLatitudeMicrosecond(bytes[i]);
-                    break;
-                default:
-                    break;
-            }
         }
     }
 

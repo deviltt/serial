@@ -6,17 +6,17 @@ public class DestinationData implements Serializable {
     private int hour;
     private int minute;
     private int second;
-    private double microsecond;  //*0.01
+    private int microsecond;  //*10 ms
 
     private int longitudeDegree;
     private int longitudeMinute;
     private int longitudeSecond;
-    private double longitudeMicrosecond; //*0.1
+    private int longitudeMicrosecond; //*100ms
 
     private int latitudeDegree;
     private int latitudeMinute;
     private int latitudeSecond;
-    private double latitudeMicrosecond;  //*0.1
+    private int latitudeMicrosecond;  //*100ms
 
     @Override
     public String toString() {
@@ -64,8 +64,8 @@ public class DestinationData implements Serializable {
         return microsecond;
     }
 
-    public void setMicrosecond(double microsecond) {
-        this.microsecond = microsecond * 0.01;
+    public void setMicrosecond(int microsecond) {
+        this.microsecond = microsecond * 10;
     }
 
     public int getLongitudeDegree() {
@@ -96,8 +96,8 @@ public class DestinationData implements Serializable {
         return longitudeMicrosecond;
     }
 
-    public void setLongitudeMicrosecond(double longitudeMicrosecond) {
-        this.longitudeMicrosecond = longitudeMicrosecond * 0.1;
+    public void setLongitudeMicrosecond(int longitudeMicrosecond) {
+        this.longitudeMicrosecond = longitudeMicrosecond * 100;
     }
 
     public int getLatitudeDegree() {
@@ -128,7 +128,7 @@ public class DestinationData implements Serializable {
         return latitudeMicrosecond;
     }
 
-    public void setLatitudeMicrosecond(double latitudeMicrosecond) {
-        this.latitudeMicrosecond = latitudeMicrosecond * 0.1;
+    public void setLatitudeMicrosecond(int latitudeMicrosecond) {
+        this.latitudeMicrosecond = latitudeMicrosecond * 100;
     }
 }
