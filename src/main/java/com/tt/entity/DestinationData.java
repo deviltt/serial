@@ -1,6 +1,8 @@
 package com.tt.entity;
 
-public class DestinationData {
+import java.io.Serializable;
+
+public class DestinationData implements Serializable {
     private int hour;
     private int minute;
     private int second;
