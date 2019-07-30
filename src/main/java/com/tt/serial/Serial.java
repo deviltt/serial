@@ -21,7 +21,7 @@ public class Serial implements SerialPortEventListener {
     private CommPortIdentifier commPortIdentifier;
     private static byte[] buffer;
 
-    public static byte[] getBuffer(){
+    public static byte[] getBuffer() {
         return buffer;
     }
 
@@ -40,9 +40,6 @@ public class Serial implements SerialPortEventListener {
                 try {
                     //打开串口
                     serialPort = (SerialPort) commPortIdentifier.open(Object.class.getSimpleName(), 2000);
-
-
-
                     serialPort.addEventListener(this);
                     //设置串口可监听
                     serialPort.notifyOnDataAvailable(true);
@@ -75,6 +72,7 @@ public class Serial implements SerialPortEventListener {
             case SerialPortEvent.RI:    //响铃侦测
                 break;
             case SerialPortEvent.DATA_AVAILABLE:    //有数据到达，生产者
+                //这边应该创建线程处理
                 sendToActiveMQ();
 //                readFromSerial();
             default:
@@ -90,7 +88,9 @@ public class Serial implements SerialPortEventListener {
             int len = 0;
             while ((len = inputStream.read(buffer)) != -1) {
                 //把字节数组传给activeMQ
-                Sender.sendMessage(buffer);
+                ActiveMq activeMq = new ActiveMq(buffer);
+                activeMq.start();
+//                Sender.sendMessage(buffer);
 //                Receiver.receiveMessage(buffer.length);
                 break;
             }
@@ -132,5 +132,18 @@ public class Serial implements SerialPortEventListener {
         Serial serial = new Serial();
         ParamConfig paramConfig = new ParamConfig("com2", 19200, 0, 8, 1);
         serial.init(paramConfig);
+    }
+
+    private static class ActiveMq extends Thread {
+        private byte[] bytes;
+
+        ActiveMq(byte[] bytes) {
+            this.bytes = bytes;
+        }
+
+        @Override
+        public void run() {
+            Sender.sendMessage(buffer);
+        }
     }
 }

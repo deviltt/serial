@@ -1,7 +1,6 @@
 package com.tt.activeMQ;
 
 import com.tt.entity.DestinationData;
-import com.tt.serial.Serial;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
 import javax.jms.*;
@@ -9,14 +8,15 @@ import javax.jms.*;
 /**
  * @author tt
  */
-public class Receiver extends Thread{
+public class Receiver {
     private static final String BROKER_URL = "tcp://localhost:61616";
 
     public static void receiveMessage() {
+        System.out.println("start");
         Connection connection = null;
         Session session = null;
         MessageConsumer consumer = null;
-        DestinationData destinationData = new DestinationData();
+        final DestinationData destinationData = new DestinationData();
 
         try {
             //创建一个工厂
@@ -26,20 +26,35 @@ public class Receiver extends Thread{
             //创建session
             session=connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             //创建一个目的地
-            Destination destination=session.createQueue("Queue2");
+            Destination destination=session.createQueue("Queue4");
             //创建一个消费者
             consumer=session.createConsumer(destination);
             //接收消息前启动消息
             connection.start();
-            //接收消息
-            Message message=consumer.receive();
+
+            Message message= consumer.receive();
+
             if (message instanceof BytesMessage){
-                byte[] bytes=new byte[Serial.getBuffer().length];
+                byte[] bytes=new byte[31];
                 BytesMessage bytesMessage= (BytesMessage) message;
-                bytesMessage.readBytes(bytes);
+                try {
+                    bytesMessage.readBytes(bytes);
+                } catch (JMSException e) {
+                    e.printStackTrace();
+                }
                 bytesToHexString(bytes, destinationData);
                 System.out.println("接收到的消息是："+destinationData);
             }
+
+//            consumer.setMessageListener(new MessageListener() {
+//                @Override
+//                public void onMessage(Message message) {
+//
+//                }
+//            });
+
+//            //接收消息
+//            Message message=consumer.receive();
         } catch (JMSException e) {
             e.printStackTrace();
         }finally {
@@ -104,8 +119,7 @@ public class Receiver extends Thread{
         }
     }
 
-//    public static void main(String[] args) {
-//        Receiver receiver=new Receiver();
-//        receiveMessage();
-//    }
+    public static void main(String[] args) {
+        receiveMessage();
+    }
 }
