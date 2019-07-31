@@ -1,7 +1,7 @@
 package com.tt.activeMQ;
 
 import com.tt.entity.DestinationData;
-import org.apache.activemq.ActiveMQConnectionFactory;
+import com.tt.singleton.SessionFactory;
 
 import javax.jms.*;
 
@@ -9,72 +9,37 @@ import javax.jms.*;
  * @author tt
  */
 public class Receiver {
-    private static final String BROKER_URL = "tcp://localhost:61616";
-
-    public static void receiveMessage() {
-        System.out.println("start");
-        Connection connection = null;
-        Session session = null;
-        MessageConsumer consumer = null;
-        final DestinationData destinationData = new DestinationData();
-
+    private static SessionFactory sessionFactory = SessionFactory.getInstance();
+    private static Session session = sessionFactory.getSession();
+    private static Connection connection = sessionFactory.getConnection();
+    private static int sum;
+    private static DestinationData destinationData = new DestinationData();
+    public static void main(String[] args) {
         try {
-            //创建一个工厂
-            ConnectionFactory factory=new ActiveMQConnectionFactory(BROKER_URL);
-            //创建一个连接
-            connection=factory.createConnection();
-            //创建session
-            session=connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            //创建一个目的地
-            Destination destination=session.createQueue("Queue4");
-            //创建一个消费者
-            consumer=session.createConsumer(destination);
             //接收消息前启动消息
             connection.start();
+            //创建一个目的地
+            Destination destination = session.createQueue("Queue4");
+            //创建一个消费者
+            MessageConsumer consumer = session.createConsumer(destination);
 
-            Message message= consumer.receive();
 
-            if (message instanceof BytesMessage){
-                byte[] bytes=new byte[31];
-                BytesMessage bytesMessage= (BytesMessage) message;
-                try {
-                    bytesMessage.readBytes(bytes);
-                } catch (JMSException e) {
-                    e.printStackTrace();
+
+            consumer.setMessageListener(new MessageListener() {
+                @Override
+                public void onMessage(Message message) {
+                    BytesMessage bytesMessage = (BytesMessage) message;
+                    //开线程处理
+                    SubReceiver subReceiver = new SubReceiver(bytesMessage);
+                    subReceiver.start();
                 }
-                bytesToHexString(bytes, destinationData);
-                System.out.println("接收到的消息是："+destinationData);
-            }
-
-//            consumer.setMessageListener(new MessageListener() {
-//                @Override
-//                public void onMessage(Message message) {
-//
-//                }
-//            });
-
-//            //接收消息
-//            Message message=consumer.receive();
+            });
         } catch (JMSException e) {
             e.printStackTrace();
-        }finally {
-            try {
-                if (consumer != null) {
-                    consumer.close();
-                }
-                if (session != null) {
-                    session.close();
-                }
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (JMSException e) {
-                e.printStackTrace();
-            }
         }
     }
 
-    private static void bytesToHexString(byte[] bytes, DestinationData destinationData) {
+    private static synchronized void bytesToHexString(byte[] bytes, DestinationData destinationData) {
         for (int i = 0; i < bytes.length; i++) {
             switch (i) {
                 case 14:
@@ -119,7 +84,23 @@ public class Receiver {
         }
     }
 
-    public static void main(String[] args) {
-        receiveMessage();
+    private static class SubReceiver extends Thread {
+        private BytesMessage bytesMessage;
+        byte[] bytes = new byte[31];
+        SubReceiver(BytesMessage bytesMessage) {
+            this.bytesMessage = bytesMessage;
+        }
+
+        @Override
+        public void run() {
+            super.run();
+            try {
+                bytesMessage.readBytes(bytes);
+            } catch (JMSException e) {
+                e.printStackTrace();
+            }
+            bytesToHexString(bytes, destinationData);
+            System.out.println("sum: " + (++sum) + " " + "接收到的消息是：" + destinationData);
+        }
     }
 }
