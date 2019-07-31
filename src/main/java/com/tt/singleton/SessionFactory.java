@@ -3,7 +3,6 @@ package com.tt.singleton;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
 import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Session;
 
@@ -13,12 +12,16 @@ import javax.jms.Session;
 public final class SessionFactory {
     //消息服务器的连接地址
     private static final String BROKER_URL = "tcp://localhost:61616";
-    private static ConnectionFactory connectionFactory;
+    private static ActiveMQConnectionFactory connectionFactory;
     private static Connection connection;
     private Session session;
 
     public Session getSession() {
         return session;
+    }
+
+    public Connection getConnection() {
+        return connection;
     }
 
     private SessionFactory() {
