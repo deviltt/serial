@@ -8,13 +8,16 @@ import javax.jms.*;
  * @author tt
  */
 public class Sender {
-    //消息服务器的连接地址
-    private static final String BROKER_URL = "tcp://localhost:61616";
     //单例工厂
-    private static SessionFactory sessionFactory=SessionFactory.getInstance();
+    private static SessionFactory sessionFactory = SessionFactory.getInstance();
     //计数发了多少条数据
-    private static int num=0;
+    private static int num = 0;
+
     public static synchronized void sendMessage(byte[] msg) {
+        //开启一个consumer线程来消费
+//        Receiver receiver = new Receiver();
+//        receiver.start();
+
         MessageProducer messageProducer = null;
         try {
             //创建一个消息

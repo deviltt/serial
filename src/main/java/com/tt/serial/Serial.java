@@ -130,7 +130,7 @@ public class Serial implements SerialPortEventListener {
 
     public static void main(String[] args) {
         Serial serial = new Serial();
-        ParamConfig paramConfig = new ParamConfig("com2", 19200, 0, 8, 1);
+        ParamConfig paramConfig = new ParamConfig("com2", 115200, 0, 8, 1);
         serial.init(paramConfig);
     }
 
@@ -143,6 +143,7 @@ public class Serial implements SerialPortEventListener {
 
         @Override
         public void run() {
+            super.run();
             Sender.sendMessage(buffer);
         }
     }
