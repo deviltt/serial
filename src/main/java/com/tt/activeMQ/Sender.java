@@ -13,6 +13,7 @@ public class Sender {
     //计数发了多少条数据
     private static int num = 0;
 
+    //使用单例线程不需要同步方法
     public static synchronized void sendMessage(byte[] msg) {
         //开启一个consumer线程来消费
 //        Receiver receiver = new Receiver();
@@ -24,7 +25,7 @@ public class Sender {
             BytesMessage bytesMessage = sessionFactory.getSession().createBytesMessage();
             bytesMessage.writeBytes(msg);
             //创建一个目的地
-            Destination destination = sessionFactory.getSession().createQueue("Queue4");
+            Destination destination = sessionFactory.getSession().createQueue("Queue");
             //创建一个消息的生产者
             messageProducer = sessionFactory.getSession().createProducer(destination);  //生产者将send的消息发送到destination
             //发送消息

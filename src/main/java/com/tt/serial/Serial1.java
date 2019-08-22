@@ -9,8 +9,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Enumeration;
 import java.util.TooManyListenersException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class Serial implements SerialPortEventListener {
+/**
+ * @author tt
+ * 功能：从串口中读取数据，并保存到ActiveMQ中去
+ */
+public class Serial1 implements SerialPortEventListener {
     private SerialPort serialPort;
     private InputStream inputStream;
     private OutputStream outputStream;
@@ -20,12 +26,16 @@ public class Serial implements SerialPortEventListener {
     //串口识别器，获取系统中的所有端口
     private CommPortIdentifier commPortIdentifier;
     private static byte[] buffer;
+    //单例线程池，保证线程有序的执行，而不是系统随机选择执行
+    private static ExecutorService executorService=Executors.newSingleThreadExecutor();
+    private static ExecutorService poolService=Executors.newFixedThreadPool(1000);
 
     public static byte[] getBuffer() {
         return buffer;
     }
 
     public void init(ParamConfig paramConfig) {
+
         //获取系统中所有的通讯端口
         portEnum = CommPortIdentifier.getPortIdentifiers();
         boolean hasPort = false;
@@ -44,6 +54,7 @@ public class Serial implements SerialPortEventListener {
                     //设置串口可监听
                     serialPort.notifyOnDataAvailable(true);
                     serialPort.setSerialPortParams(paramConfig.getBaudRate(), paramConfig.getDataBit(), paramConfig.getStopBit(), paramConfig.getCheckoutBit());
+
                 } catch (PortInUseException e) {
                     e.printStackTrace();
                 } catch (UnsupportedCommOperationException e) {
@@ -72,26 +83,28 @@ public class Serial implements SerialPortEventListener {
             case SerialPortEvent.RI:    //响铃侦测
                 break;
             case SerialPortEvent.DATA_AVAILABLE:    //有数据到达，生产者
-                //这边应该创建线程处理
-                sendToActiveMQ();
-//                readFromSerial();
+                //这边应该创建线程处理sendToActiveMQ这个操作
+                //开启一个线程去处理，同步方法
+                executorService.submit(new ActiveMq());
             default:
                 break;
-
         }
     }
 
     private void sendToActiveMQ() {
         try {
-            inputStream = serialPort.getInputStream();
+            try {
+                inputStream = serialPort.getInputStream();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println("available"+inputStream.available());
             buffer = new byte[inputStream.available()];
             int len = 0;
             while ((len = inputStream.read(buffer)) != -1) {
-                //把字节数组传给activeMQ
-                ActiveMq activeMq = new ActiveMq(buffer);
-                activeMq.start();
-//                Sender.sendMessage(buffer);
-//                Receiver.receiveMessage(buffer.length);
+//                executorService.submit(activeMq);
+//                activeMq.start();
+                Sender.sendMessage(buffer);
                 break;
             }
         } catch (IOException e) {
@@ -100,7 +113,6 @@ public class Serial implements SerialPortEventListener {
     }
 
     private String readFromSerial() {
-//        DestinationData destinationData = new DestinationData();
         try {
             //获取串口输入流
             inputStream = serialPort.getInputStream();
@@ -109,9 +121,7 @@ public class Serial implements SerialPortEventListener {
             while ((len = inputStream.read(buffer)) != -1) {
                 data = new String(buffer, 0, len);
                 System.out.println("data: " + data);
-//                System.out.println("dataHex: " + dataHex);
                 System.out.println("size: " + buffer.length);
-//                System.out.println("destinationData : " + destinationData);
                 inputStream.close();
                 inputStream = null;
                 break;
@@ -129,22 +139,17 @@ public class Serial implements SerialPortEventListener {
     }
 
     public static void main(String[] args) {
-        Serial serial = new Serial();
-        ParamConfig paramConfig = new ParamConfig("com2", 115200, 0, 8, 1);
+        Serial1 serial = new Serial1();
+        //数据包格式：1位起始位、8位数据位、1位停止位，没有校验位
+        ParamConfig paramConfig = new ParamConfig("com4", 115200, 0, 8, 1);
         serial.init(paramConfig);
     }
 
-    private static class ActiveMq extends Thread {
-        private byte[] bytes;
-
-        ActiveMq(byte[] bytes) {
-            this.bytes = bytes;
-        }
-
+    private class ActiveMq extends Thread {
         @Override
         public void run() {
             super.run();
-            Sender.sendMessage(buffer);
+            sendToActiveMQ();
         }
     }
 }

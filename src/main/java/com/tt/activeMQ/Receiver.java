@@ -4,9 +4,11 @@ import com.tt.entity.DestinationData;
 import com.tt.singleton.SessionFactory;
 
 import javax.jms.*;
+import java.util.Arrays;
 
 /**
  * @author tt
+ * 作用：从ActiveMQ的队列中获取数据
  */
 public class Receiver {
     private static SessionFactory sessionFactory = SessionFactory.getInstance();
@@ -19,11 +21,9 @@ public class Receiver {
             //接收消息前启动消息
             connection.start();
             //创建一个目的地
-            Destination destination = session.createQueue("Queue4");
+            Destination destination = session.createQueue("Queue");
             //创建一个消费者
             MessageConsumer consumer = session.createConsumer(destination);
-
-
 
             consumer.setMessageListener(new MessageListener() {
                 @Override
@@ -86,7 +86,7 @@ public class Receiver {
 
     private static class SubReceiver extends Thread {
         private BytesMessage bytesMessage;
-        byte[] bytes = new byte[31];
+        byte[] bytes = new byte[300];
         SubReceiver(BytesMessage bytesMessage) {
             this.bytesMessage = bytesMessage;
         }
@@ -99,8 +99,9 @@ public class Receiver {
             } catch (JMSException e) {
                 e.printStackTrace();
             }
-            bytesToHexString(bytes, destinationData);
-            System.out.println("sum: " + (++sum) + " " + "接收到的消息是：" + destinationData);
+//            bytesToHexString(bytes, destinationData);
+//            System.out.println("sum: " + (++sum) + " " + "接收到的消息是：" + destinationData);
+            System.out.println("sum: " + (++sum) + " " + "接收到的消息是：" + Arrays.toString(bytes));
         }
     }
 }
